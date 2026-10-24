@@ -70,12 +70,19 @@ def _skip_supplied_secrets(plan: Plan, env: dict[str, str]) -> Plan:
     return replace(plan, steps=steps, skipped=skipped)
 
 
+def _provider(llm: LLM) -> str:
+    # ai.py labels its output "gemini"; report the provider that actually answered
+    return llm.name.split(":", 1)[0] or "gemini"
+
+
 def understand(project_dir: Path, llm: Optional[LLM], env: dict[str, str]) -> Plan:
     plan = extract_plan(project_dir)
     if llm is not None:
         from .ai import ai_extract_plan
 
         plan = ai_extract_plan(llm, project_dir, plan)
+        if plan.engine == "gemini":
+            plan.engine = _provider(llm)
         readme = find_readme(project_dir)
         if readme is not None:
             plan = apply_directives(plan, read_text(readme) or "")
@@ -90,7 +97,10 @@ def investigate(
     if llm is not None:
         from .ai import ai_investigate
 
-        return ai_investigate(llm, project_dir, plan, run, hint=hint, history=history, on_event=on_event)
+        diag = ai_investigate(llm, project_dir, plan, run, hint=hint, history=history, on_event=on_event)
+        if diag.engine == "gemini":
+            diag.engine = _provider(llm)
+        return diag
     if hint is not None:
         return hint
     failed = run.failed_step
@@ -285,7 +295,7 @@ def run_check(
             llm = None if settings.offline else get_llm()
             report.settings["engine"] = llm.name if llm else "rules (offline)"
             if llm is None and not settings.offline:
-                emit("warn", "No GEMINI_API_KEY or GOOGLE_API_KEY found, using the offline rules", None)
+                emit("warn", "No GEMINI_API_KEY, GOOGLE_API_KEY or GROQ_API_KEY found, using the offline rules", None)
 
             plan = understand(project_dir, llm, settings.env)
             install_node = _pick_environment(project_dir, plan, settings, sandbox, report, emit)

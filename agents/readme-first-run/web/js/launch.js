@@ -89,9 +89,9 @@ export async function renderLaunch(main, ctx) {
         localWarning),
       h("fieldset", { class: "field" },
         h("legend", { class: "field-label" }, "Investigation"),
-        radio("engine", "gemini", !prefs.offline && gemini, "Gemini",
+        radio("engine", "gemini", !prefs.offline && gemini, (status && status.gemini && status.gemini.label) || "Gemini",
           gemini ? `Reads files and searches the code (${status.gemini.model || "default model"}).`
-                 : "Add GEMINI_API_KEY to .env and restart to turn this on.", { disabled: !gemini }),
+                 : "Add GEMINI_API_KEY or GROQ_API_KEY to .env and restart to turn this on.", { disabled: !gemini }),
         radio("engine", "offline", prefs.offline || !gemini, "Offline rules", "Nothing leaves this machine.")),
       h("fieldset", { class: "field" },
         h("legend", { class: "field-label" }, "Repair attempts"),
@@ -128,7 +128,7 @@ export async function renderLaunch(main, ctx) {
   const updateSummary = () => {
     const data = new FormData(form);
     const sb = data.get("sandbox") === "local" ? "local venv" : "Docker";
-    const eng = data.get("engine") === "gemini" ? "Gemini" : "offline rules";
+    const eng = data.get("engine") === "gemini" ? ((status && status.gemini && status.gemini.label) || "Gemini") : "offline rules";
     const r = Number(data.get("rounds"));
     form.querySelector("#settings-sum").textContent = `${sb}, ${eng}, ${r === 0 ? "report only" : `${r} repair ${r === 1 ? "attempt" : "attempts"}`}`;
     localWarning.hidden = data.get("sandbox") !== "local";

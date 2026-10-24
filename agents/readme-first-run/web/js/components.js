@@ -225,5 +225,6 @@ export const CATEGORY = {
 export function engineName(engine) {
   if (!engine) return "";
   if (engine.startsWith("gemini")) return "Gemini";
+  if (engine.startsWith("groq")) return "Groq";
   return "Offline rules";
 }

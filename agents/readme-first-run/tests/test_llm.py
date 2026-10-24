@@ -1,3 +1,4 @@
+import json
 import pytest
 from google.genai import errors
 
@@ -130,3 +131,73 @@ def test_fake_llm_replays_and_records():
         fake.complete_json("sys", [])
     assert len(fake.calls) == 4
     assert fake.calls[1]["messages"][0]["text"] == "2"
+
+
+class _Resp:
+    def __init__(self, body):
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def read(self):
+        return json.dumps(self.body).encode()
+
+
+def test_groq_sends_chat_json_and_parses_reply(monkeypatch):
+    from firstrun.llm import GroqLLM
+
+    seen = {}
+
+    def opener(req, timeout=0):
+        seen["url"] = req.full_url
+        seen["headers"] = dict(req.header_items())
+        seen["payload"] = json.loads(req.data)
+        return _Resp({"choices": [{"message": {"content": '{"tool": "read_file", "args": {"path": "main.py"}}'}}]})
+
+    monkeypatch.delenv("FIRSTRUN_MODEL", raising=False)
+    llm = GroqLLM(api_key="gsk_test", opener=opener)
+    out = llm.complete_json("Reply in JSON.", [{"role": "user", "text": "hi"}, {"role": "model", "text": "{}"}])
+    assert out == {"tool": "read_file", "args": {"path": "main.py"}}
+    assert seen["url"].endswith("/openai/v1/chat/completions")
+    assert seen["headers"]["Authorization"] == "Bearer gsk_test"
+    assert seen["payload"]["model"] == "openai/gpt-oss-120b"
+    assert [m["role"] for m in seen["payload"]["messages"]] == ["system", "user", "assistant"]
+    assert seen["payload"]["response_format"] == {"type": "json_object"}
+    assert llm.name == "groq:openai/gpt-oss-120b"
+
+
+def test_groq_retries_without_json_mode_when_validation_fails():
+    import io
+    import urllib.error
+
+    from firstrun.llm import GroqLLM
+
+    calls = []
+
+    def opener(req, timeout=0):
+        payload = json.loads(req.data)
+        calls.append("response_format" in payload)
+        if "response_format" in payload:
+            raise urllib.error.HTTPError(req.full_url, 400, "bad", {}, io.BytesIO(b'{"error":{"code":"json_validate_failed"}}'))
+        return _Resp({"choices": [{"message": {"content": 'Sure: {"final": {"category": "unknown"}}'}}]})
+
+    out = GroqLLM(api_key="k", opener=opener).complete_json("JSON please", [{"role": "user", "text": "x"}])
+    assert out == {"final": {"category": "unknown"}}
+    assert calls == [True, False]
+
+
+def test_get_llm_provider_choice(monkeypatch):
+    from firstrun import llm as mod
+
+    for k in ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GROQ_API_KEY", "FIRSTRUN_PROVIDER", "FIRSTRUN_MODEL"):
+        monkeypatch.delenv(k, raising=False)
+    assert mod.get_llm() is None
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_x")
+    assert mod.get_llm().name.startswith("groq:")
+    assert mod.get_llm(offline=True) is None
+    monkeypatch.setenv("FIRSTRUN_PROVIDER", "gemini")
+    assert mod.get_llm() is None  # asked for gemini, no gemini key

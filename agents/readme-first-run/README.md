@@ -32,7 +32,7 @@
 
 - **Language & Runtime**: Python 3.10+ (developed and tested on 3.12)
 - **Agent Framework / Core Library**: Vanilla Python agent loop (JSON tool calls), no framework
-- **Models**: Gemini through the `google-genai` SDK, default `gemini-flash-latest` (configurable with `FIRSTRUN_MODEL`). Fully usable offline with built-in rules.
+- **Models**: Gemini through the `google-genai` SDK (default `gemini-flash-latest`), or Groq (default `openai/gpt-oss-120b`). Pick with `FIRSTRUN_PROVIDER`, override with `FIRSTRUN_MODEL`. Fully usable offline with built-in rules.
 - **External APIs / Tools**: Docker (sandbox), git (to fetch GitHub URLs), GitHub CLI (`gh`, only for scanning PRs), PyPI (the checked project's own installs)
 - **Web UI**: standard library HTTP server with Server-Sent Events, hand-written HTML/CSS/JS, no build step
 - **MCP**: official `mcp` Python SDK (FastMCP), stdio transport
@@ -111,7 +111,9 @@
 | Variable Name | Required | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `GEMINI_API_KEY` | No | *None* | Gemini key for the AI planner and investigator. `GOOGLE_API_KEY` also works. |
-| `FIRSTRUN_MODEL` | No | `gemini-flash-latest` | Gemini model id |
+| `GROQ_API_KEY` | No | *None* | Alternative provider: Groq's hosted open models (OpenAI compatible API, called over plain HTTP) |
+| `FIRSTRUN_PROVIDER` | No | whichever key is set | `gemini` or `groq`, for when both keys are present |
+| `FIRSTRUN_MODEL` | No | `gemini-flash-latest` / `openai/gpt-oss-120b` | Model id for the chosen provider |
 
 These are FirstRun's own settings and are never passed into the project being checked. Secrets the checked project needs go in through `--env-file` or `--pass-env` (see below).
 

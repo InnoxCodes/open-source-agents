@@ -268,7 +268,8 @@ class App:
         if client is not None:
             model = getattr(client, "model", None) or client.name
         env = {"docker": {"ok": ok, "detail": detail or "docker is running"},
-               "gemini": {"ok": client is not None, "model": model}}
+               "gemini": {"ok": client is not None, "model": model,
+                          "label": "Groq" if client is not None and client.name.startswith("groq") else "Gemini"}}
         self._status_cache = (now, env)
         return env
 

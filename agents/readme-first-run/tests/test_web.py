@@ -165,7 +165,7 @@ def test_status(server):
     status, data = get_json(server, "/api/status")
     assert status == 200
     assert data["docker"] == {"ok": False, "detail": "daemon not running"}
-    assert data["gemini"] == {"ok": False, "model": None}
+    assert data["gemini"] == {"ok": False, "model": None, "label": "Gemini"}
     assert data["defaults"]["sandbox"] == "docker" and data["busy"] is False
     names = {e["name"]: e for e in data["examples"]}
     assert {"quote-of-the-day", "standup-notes", "gemini-haiku"} <= set(names)

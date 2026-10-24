@@ -65,7 +65,7 @@ async function refreshEnv() {
       h("span", { class: `env-item is-${docker.ok ? "ok" : "off"}`, title: docker.detail || "" },
         icon("cube"), docker.ok ? "Docker ready" : "Docker off"),
       h("span", { class: `env-item is-${gemini.ok ? "ok" : "off"}`, title: gemini.model || "" },
-        icon("key"), gemini.ok ? "Gemini on" : "Offline rules"));
+        icon("key"), gemini.ok ? `${gemini.label || "Gemini"} on` : "Offline rules"));
   } catch {
     put(slot, h("span", { class: "env-item is-off" }, icon("warning"), "FirstRun server unreachable"));
   }
