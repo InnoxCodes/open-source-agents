@@ -106,7 +106,7 @@ def investigate(
     failed = run.failed_step
     return Diagnosis(
         category="unknown",
-        summary="The failure does not match any offline rule. Run with a Gemini key for a deeper look.",
+        summary="The failure does not match any offline rule. Run with an AI key (Groq or Gemini) for a deeper look.",
         explanation=(failed.output.strip().splitlines() or ["no output"])[-1] if failed else "",
         confidence="low",
     )
